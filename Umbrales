@@ -1,0 +1,56 @@
+import pandas as pd
+import numpy as np
+
+def cargar_datos(Umbral_HA):
+    """Carga los datos desde un archivo CSV."""
+    print(f"Cargando archivo: {Umbral_HA}")  # 🔍 Verifica que el archivo se está cargando
+    df = pd.read_csv(Umbral_HA, delimiter=';')  # ✅ Se usa la variable correctamente
+    return df
+
+def calcular_umbrales(frecuencias):
+    """Calcula los umbrales para términos consolidados y emergentes."""
+    umbral_consolidados = np.mean(frecuencias) + np.std(frecuencias)
+    umbral_emergentes = np.mean(frecuencias)  # Se usa la media como umbral de emergentes
+    return umbral_consolidados, umbral_emergentes
+
+def filtrar_terminos(df, umbral_consolidados, umbral_emergentes):
+    """Filtra términos consolidados y emergentes con base en los umbrales."""
+    consolidados = df[df["Frecuencia"] >= umbral_consolidados]
+    emergentes = df[df["Frecuencia"] < umbral_emergentes]
+    return consolidados, emergentes
+
+def mostrar_resultados(consolidados, emergentes, umbral_consolidados, umbral_emergentes):
+    """Muestra los resultados de los términos consolidados y emergentes."""
+    print(f"Umbral para términos consolidados: {umbral_consolidados}")
+    print(f"Umbral para términos emergentes: {umbral_emergentes}")
+    
+    print("\nTérminos consolidados:")
+    print(consolidados)
+    
+    print("\nTérminos emergentes:")
+    print(emergentes)
+
+def main():
+    """Función principal del programa."""
+    archivo = "Umbral_HA.csv"  # 
+    df = cargar_datos(archivo)  # 
+    
+    # Verificar que la columna "Frecuencia" existe en el DataFrame
+    if "Frecuencia" not in df.columns:
+        print("Error: La columna 'Frecuencia' no se encuentra en el archivo CSV.")
+        return
+    
+    frecuencias = df["Frecuencia"].values  # Extraer valores de frecuencia
+    
+    # Calcular umbrales
+    umbral_consolidados, umbral_emergentes = calcular_umbrales(frecuencias)
+    
+    # Filtrar términos
+    consolidados, emergentes = filtrar_terminos(df, umbral_consolidados, umbral_emergentes)
+    
+    # Mostrar resultados
+    mostrar_resultados(consolidados, emergentes, umbral_consolidados, umbral_emergentes)
+
+# Ejecutar el programa solo si este script es el principal
+if __name__ == '__main__':
+    main()
