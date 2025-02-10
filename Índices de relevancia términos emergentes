@@ -1,0 +1,54 @@
+import pandas as pd
+import os
+
+# Verifica si el archivo existe
+archivo = 'rev_emergentes_HA.csv'
+
+if not os.path.exists(archivo):
+    print(f"¡Error! El archivo '{archivo}' no se encuentra en el directorio: {os.getcwd()}")
+else:
+    # Cargar el CSV
+    df = pd.read_csv('rev_emergentes_HA.csv', delimiter=';')
+
+    # Limpiar nombres de columnas por si tienen espacios
+    df.columns = df.columns.str.strip()
+
+    # Verifica si las columnas 'Frecuencia' y 'Asociación' están presentes
+    if 'Frecuencia' not in df.columns or 'Asociación' not in df.columns:
+        print("¡Error! Las columnas 'Frecuencia' o 'Asociación' no están en el DataFrame.")
+    else:
+        # Rellenar valores NaN con 0
+        df[['Frecuencia', 'Asociación']] = df[['Frecuencia', 'Asociación']].fillna(0)
+
+        # Normalizar valores entre 0 y 1 para comparar de forma equitativa
+        df['Frecuencia_Norm'] = (df['Frecuencia'] - df['Frecuencia'].min()) / (df['Frecuencia'].max() - df['Frecuencia'].min())
+        df['Asociación_Norm'] = (df['Asociación'] - df['Asociación'].min()) / (df['Asociación'].max() - df['Asociación'].min())
+
+        # Función para calcular relevancia de términos emergentes
+        def calcular_relevancia_emergentes(frecuencia_norm, asociacion_norm, peso_frecuencia, peso_asociacion):
+            return ((1 - frecuencia_norm) * peso_frecuencia) + (asociacion_norm * peso_asociacion)
+
+        # Configurar pesos (ajustables según necesidad)
+        peso_frecuencia_emergente = 0.5  # Penaliza alta frecuencia
+        peso_asociacion_emergente = 0.5  # Premia alta asociación
+
+        # Calcular relevancia de términos emergentes
+        df['Relevancia_Emergentes'] = df.apply(
+            lambda row: calcular_relevancia_emergentes(row['Frecuencia_Norm'], row['Asociación_Norm'], 
+                                                       peso_frecuencia_emergente, peso_asociacion_emergente), 
+            axis=1
+        )
+
+        # Ordenar por relevancia (descendente)
+        df_sorted = df.sort_values(by='Relevancia_Emergentes', ascending=False)
+
+        # Calcular el número de términos a seleccionar (30% más relevantes)
+        num_terminos = len(df_sorted)
+        muestra_significativa = max(1, int(num_terminos * 0.3))  # Asegura al menos 1 término
+
+        # Seleccionar los términos emergentes más relevantes
+        df_muestra = df_sorted.head(muestra_significativa)
+
+        # Mostrar resultados
+        print("Lista de términos emergentes más relevantes:")
+        print(df_muestra[['Término', 'Frecuencia', 'Asociación', 'Relevancia_Emergentes']])
