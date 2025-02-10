@@ -1,0 +1,50 @@
+import pandas as pd
+import os
+
+# Verifica si el archivo existe
+archivo = 'rev_consolidados_HA.csv'
+
+if not os.path.exists(archivo):
+    print(f"¡Error! El archivo '{archivo}' no se encuentra en el directorio: {os.getcwd()}")
+else:
+    # Cargar el CSV
+    df = pd.read_csv(archivo, delimiter=';')
+
+    # Limpiar nombres de columnas por si tienen espacios
+    df.columns = df.columns.str.strip()
+
+    # Verifica si las columnas 'Frecuencia' y 'Asociación' están presentes
+    if 'Frecuencia' not in df.columns or 'Asociación' not in df.columns:
+        print("¡Error! Las columnas 'Frecuencia' o 'Asociación' no están en el DataFrame.")
+    else:
+        # Rellenar valores NaN con 0
+        df[['Frecuencia', 'Asociación']] = df[['Frecuencia', 'Asociación']].fillna(0)
+
+        # Función para calcular relevancia
+        def calcular_relevancia_consolidados(frecuencia, asociacion, peso_frecuencia, peso_asociacion):
+            return (frecuencia * peso_frecuencia) + (asociacion * peso_asociacion)
+
+        # Configurar pesos
+        peso_frecuencia_consolidado = 0.5
+        peso_asociacion_consolidado = 0.5
+
+        # Calcular relevancia
+        df['Relevancia_Consolidados'] = df.apply(
+            lambda row: calcular_relevancia_consolidados(row['Frecuencia'], row['Asociación'], 
+                                                         peso_frecuencia_consolidado, peso_asociacion_consolidado), 
+            axis=1
+        )
+
+        # Ordenar por relevancia
+        df_sorted = df.sort_values(by='Relevancia_Consolidados', ascending=False)
+
+        # Calcular el número de términos a seleccionar
+        num_terminos = len(df_sorted)
+        muestra_significativa = max(1, int(num_terminos * 0.3))  # Al menos selecciona un término
+
+        # Seleccionar los términos más relevantes
+        df_muestra = df_sorted.head(muestra_significativa)
+
+        # Mostrar resultados
+        print("Lista de términos más relevantes:")
+        print(df_muestra[['Término', 'Frecuencia', 'Asociación', 'Relevancia_Consolidados']])
